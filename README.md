@@ -9,6 +9,8 @@
 
 A Server's Host is a seating system app that helps in managing and seating guests in a restaurant or event based on party size. The app utilizes JavaScript and the Tailwind CSS framework.
 
+<img src="/HostBot_Demo.gif" width="80%" alt="demo of user seating tables by head count and a summary table of the servers' stats" />
+
 ## How to Use
 
 1. Enter the party size (1-12) in the input field.
