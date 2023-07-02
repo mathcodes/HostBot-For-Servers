@@ -11,7 +11,11 @@ A Server's Host is a seating system app that helps in managing and seating guest
 
 ## Previous command line version before UI was made:
 
-<img src="/HostBot_Demo.gif" width="80%" alt="demo of user seating tables by head count and a summary table of the servers' stats" />
+<img src="/HostBot_Demo.gif" width="78%" alt="demo of user seating tables by head count and a summary table of the servers' stats" />
+
+## Current UI (in progress and welcoming contributors)
+
+<img src="/UI.png" width="18%" alt="current version of ui" />
 
 ## How to Use
 
@@ -20,14 +24,6 @@ A Server's Host is a seating system app that helps in managing and seating guest
 3. The app will assign the party to an available table based on the party size.
 4. The server's statistics, including the number of guests, number of tables, average guests per table, and total tips, are displayed in a table.
 5. The tables for each server are displayed, indicating their availability.
-
-## Screenshots
-
-<!-- Add screenshots of the app if applicable -->
-
-## Installation
-
-<!-- Provide installation steps if applicable -->
 
 ## Contributing
 
