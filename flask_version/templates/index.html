@@ -1,0 +1,550 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HostBot - Restaurant Seating System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <!-- Background Music -->
+    <audio id="backgroundMusic" loop preload="auto">
+        <source src="{{ url_for('static', filename='Misty.mp3') }}" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-4xl font-bold text-blue-600">HostBot - Restaurant Seating System</h1>
+            
+            <!-- Music Control -->
+            <button id="musicToggle" class="bg-gray-200 hover:bg-gray-300 p-3 rounded-full transition duration-200 shadow-md" 
+                    title="Toggle background music" style="display: none;">
+                <svg id="speakerIcon" class="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
+                <svg id="mutedIcon" class="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 24 24" style="display: none;">
+                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Status Messages -->
+        <div id="statusMessage" class="hidden mb-4 p-4 rounded-lg"></div>
+        
+        <!-- Party Seating Form -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Seat New Party</h2>
+            <form id="partyForm" class="flex flex-wrap gap-4 items-end">
+                <div>
+                    <label for="partySize" class="block text-gray-700 font-semibold mb-2">Party Size (1-12):</label>
+                    <input type="number" id="partySize" name="partySize" 
+                           class="border border-gray-300 rounded px-3 py-2 w-24" min="1" max="12" required>
+                </div>
+                <div>
+                    <label for="serverPreference" class="block text-gray-700 font-semibold mb-2">Server Preference:</label>
+                    <select id="serverPreference" class="border border-gray-300 rounded px-3 py-2">
+                        <option value="">Auto-assign</option>
+                        {% for server in servers %}
+                        <option value="{{ server.name }}">{{ server.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded 
+                                          focus:outline-none focus:shadow-outline transition duration-200">
+                    Seat Party
+                </button>
+            </form>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Quick Actions</h2>
+            <div class="flex flex-wrap gap-4">
+                <button id="clearTableBtn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition duration-200">
+                    Clear Table
+                </button>
+                <button id="addTipBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-200">
+                    Add Tip
+                </button>
+                <button id="resetAllBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition duration-200">
+                    Reset All Tables
+                </button>
+                <button id="refreshBtn" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded transition duration-200">
+                    Refresh Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Server Statistics -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Server Statistics</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full border border-gray-300 rounded">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 border-b font-semibold text-left">Server</th>
+                            <th class="px-4 py-2 border-b font-semibold text-left">Current Guests</th>
+                            <th class="px-4 py-2 border-b font-semibold text-left">Total Seated</th>
+                            <th class="px-4 py-2 border-b font-semibold text-left">Tables</th>
+                            <th class="px-4 py-2 border-b font-semibold text-left">Tips</th>
+                            <th class="px-4 py-2 border-b font-semibold text-left">Availability</th>
+                        </tr>
+                    </thead>
+                    <tbody id="serverStatsBody">
+                        <!-- Dynamic content will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tables Overview -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-semibold mb-4">Tables Overview</h2>
+            <div id="tablesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Dynamic content will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Clear Table Modal -->
+        <div id="clearTableModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                <h3 class="text-xl font-semibold mb-4">Clear Table</h3>
+                <select id="tableSelect" class="border border-gray-300 rounded px-3 py-2 w-full mb-4">
+                    <option value="">Select table to clear...</option>
+                </select>
+                <div class="flex gap-2">
+                    <button id="confirmClear" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition duration-200">
+                        Clear Table
+                    </button>
+                    <button id="cancelClear" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition duration-200">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Tip Modal -->
+        <div id="tipModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                <h3 class="text-xl font-semibold mb-4">Add Tip</h3>
+                <select id="serverSelect" class="border border-gray-300 rounded px-3 py-2 w-full mb-4">
+                    <option value="">Select server...</option>
+                    {% for server in servers %}
+                    <option value="{{ server.name }}">{{ server.name }}</option>
+                    {% endfor %}
+                </select>
+                <input type="number" id="tipAmount" placeholder="Tip amount ($)" 
+                       class="border border-gray-300 rounded px-3 py-2 w-full mb-4" step="0.01" min="0.01">
+                <div class="flex gap-2">
+                    <button id="confirmTip" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-200">
+                        Add Tip
+                    </button>
+                    <button id="cancelTip" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition duration-200">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white py-8 mt-12">
+            <div class="container mx-auto px-4">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="mb-4 md:mb-0">
+                        <h3 class="text-xl font-bold text-blue-400">HostBot</h3>
+                        <p class="text-gray-300">Professional Restaurant Seating System</p>
+                    </div>
+                    <div class="text-center md:text-right">
+                        <p class="text-gray-300">&copy; 2025 Jon Christie</p>
+                        <p class="text-sm text-gray-400">All rights reserved</p>
+                    </div>
+                </div>
+                <div class="border-t border-gray-700 mt-6 pt-6 text-center">
+                    <p class="text-sm text-gray-400">
+                        Built with Flask & Tailwind CSS | Intelligent seating distribution algorithm
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Data Script -->
+    <script type="application/json" id="servers-data">{{ servers | tojson }}</script>
+
+    <script>
+        var servers = JSON.parse(document.getElementById('servers-data').textContent);
+        var musicStarted = false;
+        var musicMuted = false;
+
+        function showMessage(text, isError = false) {
+            const statusMessage = $('#statusMessage');
+            statusMessage.text(text);
+            statusMessage.removeClass('hidden bg-green-100 text-green-800 bg-red-100 text-red-800');
+            statusMessage.addClass(isError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800');
+            
+            setTimeout(() => {
+                statusMessage.addClass('hidden');
+            }, 5000);
+        }
+
+        function getTotalOccupiedTables() {
+            let totalOccupied = 0;
+            servers.forEach(server => {
+                server.tables.forEach(table => {
+                    if (table.occupied > 0) totalOccupied++;
+                });
+            });
+            return totalOccupied;
+        }
+
+        function startBackgroundMusic() {
+            if (musicStarted) return;
+            
+            const audio = document.getElementById('backgroundMusic');
+            audio.volume = 0; // Start at 0 volume
+            
+            // Try to play the audio
+            const playPromise = audio.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    musicStarted = true;
+                    showMusicControl();
+                    // Fade in over 3 seconds to medium-low volume (0.35)
+                    fadeInAudio(audio, 0.35, 3000);
+                    showMessage('🎵 Background music started');
+                }).catch(error => {
+                    console.log('Audio autoplay prevented:', error);
+                    showMessage('🎵 Click anywhere to enable background music', false);
+                    
+                    // Add click listener to start music on user interaction
+                    $(document).one('click', function() {
+                        audio.play().then(() => {
+                            musicStarted = true;
+                            showMusicControl();
+                            fadeInAudio(audio, 0.35, 3000);
+                            showMessage('🎵 Background music started');
+                        });
+                    });
+                });
+            }
+        }
+
+        function fadeInAudio(audioElement, targetVolume, duration) {
+            const steps = 50;
+            const stepTime = duration / steps;
+            const volumeIncrement = targetVolume / steps;
+            let currentStep = 0;
+
+            const fadeInterval = setInterval(() => {
+                currentStep++;
+                audioElement.volume = Math.min(volumeIncrement * currentStep, targetVolume);
+                
+                if (currentStep >= steps) {
+                    clearInterval(fadeInterval);
+                    audioElement.volume = targetVolume;
+                }
+            }, stepTime);
+        }
+
+        function toggleMusic() {
+            const audio = document.getElementById('backgroundMusic');
+            const speakerIcon = document.getElementById('speakerIcon');
+            const mutedIcon = document.getElementById('mutedIcon');
+            
+            if (musicMuted) {
+                // Unmute
+                audio.muted = false;
+                speakerIcon.style.display = 'block';
+                mutedIcon.style.display = 'none';
+                musicMuted = false;
+                showMessage('🎵 Music unmuted');
+            } else {
+                // Mute
+                audio.muted = true;
+                speakerIcon.style.display = 'none';
+                mutedIcon.style.display = 'block';
+                musicMuted = true;
+                showMessage('🔇 Music muted');
+            }
+        }
+
+        function showMusicControl() {
+            document.getElementById('musicToggle').style.display = 'block';
+        }
+
+        function updateServerStats() {
+            const tbody = $('#serverStatsBody');
+            tbody.empty();
+
+            servers.forEach((server, index) => {
+                const row = `
+                    <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
+                        <td class="px-4 py-2 border-b font-medium">${server.name}</td>
+                        <td class="px-4 py-2 border-b">${server.current_guests}</td>
+                        <td class="px-4 py-2 border-b">${server.total_seated_ever}</td>
+                        <td class="px-4 py-2 border-b">${server.tables.length}</td>
+                        <td class="px-4 py-2 border-b">$${server.total_tips.toFixed(2)}</td>
+                        <td class="px-4 py-2 border-b">
+                            <span class="px-2 py-1 rounded text-xs ${server.availability_percentage > 50 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${server.availability_percentage}%
+                            </span>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function renderTables() {
+            const container = $('#tablesContainer');
+            container.empty();
+
+            servers.forEach(server => {
+                const serverDiv = $(`
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="text-lg font-bold mb-3 text-center">${server.name}</h3>
+                        <div class="space-y-2" id="tables-${server.name}"></div>
+                    </div>
+                `);
+
+                const tablesGrid = serverDiv.find(`#tables-${server.name}`);
+
+                server.tables.forEach(table => {
+                    let bgColor = 'bg-green-100 border-green-300 hover:bg-green-200';
+                    if (table.occupied > 0) {
+                        if (table.is_available) {
+                            bgColor = 'bg-yellow-100 border-yellow-300 hover:bg-yellow-200';
+                        } else {
+                            bgColor = 'bg-red-100 border-red-300 hover:bg-red-200';
+                        }
+                    }
+
+                    const tableDiv = $(`
+                        <div class="p-3 rounded border-2 cursor-pointer transition-colors ${bgColor}" 
+                             data-server="${server.name}" data-table="${table.table_number}">
+                            <div class="font-semibold">Table ${table.table_number}</div>
+                            <div class="text-sm text-gray-600">${table.occupied}/${table.seats} seats</div>
+                            <div class="text-xs mt-1">
+                                <span class="font-medium">${table.occupancy_rate}% occupied</span>
+                            </div>
+                        </div>
+                    `);
+
+                    if (table.occupied > 0) {
+                        tableDiv.click(function() {
+                            if (confirm(`Clear Table ${table.table_number} (${table.occupied} guests)?`)) {
+                                clearTable(server.name, table.table_number);
+                            }
+                        });
+                    }
+
+                    tablesGrid.append(tableDiv);
+                });
+
+                container.append(serverDiv);
+            });
+        }
+
+        function populateTableSelect() {
+            const select = $('#tableSelect');
+            select.html('<option value="">Select table to clear...</option>');
+
+            servers.forEach(server => {
+                server.tables.forEach(table => {
+                    if (table.occupied > 0) {
+                        select.append(`
+                            <option value="${server.name}-${table.table_number}">
+                                ${server.name} - Table ${table.table_number} (${table.occupied} guests)
+                            </option>
+                        `);
+                    }
+                });
+            });
+        }
+
+        function seatParty() {
+            const partySize = parseInt($('#partySize').val());
+            const serverPreference = $('#serverPreference').val();
+
+            $.ajax({
+                url: '/api/seat_party',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    party_size: partySize,
+                    server_preference: serverPreference
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        const hadOccupiedTables = getTotalOccupiedTables() > 0;
+                        
+                        servers = response.servers;
+                        updateServerStats();
+                        renderTables();
+                        showMessage(response.message);
+                        $('#partySize').val('');
+                        $('#serverPreference').val('');
+
+                        // Start background music if this is the first table seated
+                        if (!hadOccupiedTables && getTotalOccupiedTables() > 0) {
+                            startBackgroundMusic();
+                        }
+                    } else {
+                        showMessage(response.message, true);
+                    }
+                },
+                error: function() {
+                    showMessage('Error seating party. Please try again.', true);
+                }
+            });
+        }
+
+        function clearTable(serverName, tableNumber) {
+            $.ajax({
+                url: '/api/clear_table',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    server_name: serverName,
+                    table_number: tableNumber
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        servers = response.servers;
+                        updateServerStats();
+                        renderTables();
+                        showMessage(response.message);
+                    } else {
+                        showMessage(response.message, true);
+                    }
+                },
+                error: function() {
+                    showMessage('Error clearing table. Please try again.', true);
+                }
+            });
+        }
+
+        function addTip() {
+            const serverName = $('#serverSelect').val();
+            const tipAmount = parseFloat($('#tipAmount').val());
+
+            if (!serverName || !tipAmount || tipAmount <= 0) {
+                showMessage('Please select a server and enter a valid tip amount.', true);
+                return;
+            }
+
+            $.ajax({
+                url: '/api/add_tip',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    server_name: serverName,
+                    tip_amount: tipAmount
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        servers = response.servers;
+                        updateServerStats();
+                        showMessage(response.message);
+                        $('#serverSelect').val('');
+                        $('#tipAmount').val('');
+                        $('#tipModal').removeClass('flex').addClass('hidden');
+                    } else {
+                        showMessage(response.message, true);
+                    }
+                },
+                error: function() {
+                    showMessage('Error adding tip. Please try again.', true);
+                }
+            });
+        }
+
+        function resetAll() {
+            if (confirm('Are you sure you want to reset all tables and statistics?')) {
+                $.ajax({
+                    url: '/api/reset_all',
+                    method: 'POST',
+                    success: function(response) {
+                        if (response.success) {
+                            servers = response.servers;
+                            updateServerStats();
+                            renderTables();
+                            showMessage(response.message);
+                        }
+                    },
+                    error: function() {
+                        showMessage('Error resetting data. Please try again.', true);
+                    }
+                });
+            }
+        }
+
+        function refreshData() {
+            $.ajax({
+                url: '/api/get_servers',
+                method: 'GET',
+                success: function(data) {
+                    servers = data;
+                    updateServerStats();
+                    renderTables();
+                    showMessage('Data refreshed');
+                },
+                error: function() {
+                    showMessage('Error refreshing data. Please try again.', true);
+                }
+            });
+        }
+
+        // Event Listeners
+        $(document).ready(function() {
+            updateServerStats();
+            renderTables();
+
+            $('#partyForm').submit(function(e) {
+                e.preventDefault();
+                seatParty();
+            });
+
+            $('#clearTableBtn').click(function() {
+                populateTableSelect();
+                $('#clearTableModal').removeClass('hidden').addClass('flex');
+            });
+
+            $('#addTipBtn').click(function() {
+                $('#tipModal').removeClass('hidden').addClass('flex');
+            });
+
+            $('#resetAllBtn').click(resetAll);
+            $('#refreshBtn').click(refreshData);
+
+            // Music toggle
+            $('#musicToggle').click(toggleMusic);
+
+            $('#confirmClear').click(function() {
+                const tableValue = $('#tableSelect').val();
+                if (tableValue) {
+                    const [serverName, tableNumber] = tableValue.split('-');
+                    clearTable(serverName, parseInt(tableNumber));
+                    $('#clearTableModal').addClass('hidden');
+                }
+            });
+
+            $('#confirmTip').click(addTip);
+
+            $('#cancelClear, #cancelTip').click(function() {
+                $('.fixed').addClass('hidden');
+            });
+
+            // Close modals when clicking outside
+            $('.fixed').click(function(e) {
+                if (e.target === this) {
+                    $(this).addClass('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
